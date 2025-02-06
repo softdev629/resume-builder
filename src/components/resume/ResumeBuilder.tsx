@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useState, useRef } from "react";
 import { useNavigate } from "react-router-dom";
 import { useAppSelector, useAppDispatch } from "../../store/hooks";
 import {
@@ -9,8 +9,6 @@ import {
   addSkill,
 } from "../../store/slices/resumeSlice";
 import type { Resume, Education, Experience, Skill } from "../../types";
-import { Chrono } from "react-chrono";
-import type { TimelineItemModel } from "react-chrono/dist/models/TimelineItemModel";
 
 type Section = "personal" | "education" | "experience" | "skills";
 type PreviewView = "text" | "visual";
@@ -23,6 +21,12 @@ const ResumeBuilder = () => {
   const isLoading = useAppSelector((state) => state.resume.isLoading);
   const [activeSection, setActiveSection] = useState<Section>("personal");
   const [previewView, setPreviewView] = useState<PreviewView>("text");
+  const [zoomLevel, setZoomLevel] = useState(1);
+  const [timelineWidth] = useState(1000);
+  const [isDragging, setIsDragging] = useState(false);
+  const [dragStart, setDragStart] = useState({ x: 0, y: 0 });
+  const [scrollPosition, setScrollPosition] = useState({ x: 0, y: 0 });
+  const timelineRef = useRef<HTMLDivElement>(null);
 
   // Form states for new entries
   const [newEducation, setNewEducation] = useState<Omit<Education, "id">>({
@@ -72,6 +76,70 @@ const ResumeBuilder = () => {
       dispatch(setCurrentResume(newResume));
     }
   }, [user, resume, navigate, dispatch]);
+
+  useEffect(() => {
+    const timeline = timelineRef.current;
+    if (!timeline) return;
+
+    const handleWheelEvent = (e: WheelEvent) => {
+      e.preventDefault();
+      const zoomSpeed = 0.1;
+      const delta = e.deltaY > 0 ? -zoomSpeed : zoomSpeed;
+      setZoomLevel((prev) => Math.max(0.5, Math.min(2, prev + delta)));
+    };
+
+    timeline.addEventListener("wheel", handleWheelEvent, { passive: false });
+
+    const handleMouseDown = (e: MouseEvent) => {
+      setIsDragging(true);
+      setDragStart({ x: e.clientX - scrollPosition.x, y: e.clientY - scrollPosition.y });
+      timeline.style.cursor = 'grabbing';
+    };
+
+    const handleMouseMove = (e: MouseEvent) => {
+      if (!isDragging) return;
+      
+      const newX = e.clientX - dragStart.x;
+      const newY = e.clientY - dragStart.y;
+      
+      setScrollPosition({ x: newX, y: newY });
+      timeline.scrollLeft = -newX;
+    };
+
+    const handleMouseUp = () => {
+      setIsDragging(false);
+      timeline.style.cursor = 'grab';
+    };
+
+    timeline.addEventListener('mousedown', handleMouseDown);
+    window.addEventListener('mousemove', handleMouseMove);
+    window.addEventListener('mouseup', handleMouseUp);
+
+    return () => {
+      timeline.removeEventListener("wheel", handleWheelEvent);
+      timeline.removeEventListener('mousedown', handleMouseDown);
+      window.removeEventListener('mousemove', handleMouseMove);
+      window.removeEventListener('mouseup', handleMouseUp);
+    };
+  });
+
+  const getTimelineYears = () => {
+    const allDates = [
+      ...resume!.experience.flatMap((exp) => [exp.startDate, exp.endDate]),
+      ...resume!.education.flatMap((edu) => [edu.startDate, edu.endDate]),
+    ].filter(Boolean);
+
+    const minYear = Math.min(
+      ...allDates.map((date) => new Date(date).getFullYear())
+    );
+    const maxYear = Math.max(
+      ...allDates.map((date) =>
+        date ? new Date(date).getFullYear() : new Date().getFullYear()
+      )
+    );
+
+    return Array.from({ length: maxYear - minYear + 1 }, (_, i) => minYear + i);
+  };
 
   const handlePersonalInfoChange = (
     e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>
@@ -373,6 +441,140 @@ const ResumeBuilder = () => {
         ))}
       </div>
     </section>
+  );
+
+  const renderVisualView = () => (
+    <div 
+      ref={timelineRef}
+      className="relative h-[600px] overflow-x-auto"
+      style={{ 
+        cursor: isDragging ? 'grabbing' : 'grab',
+        userSelect: 'none' // Prevent text selection while dragging
+      }}
+
+    >
+      <div 
+        className="absolute left-1/2 top-1/2 transform -translate-x-1/2 -translate-y-1/2"
+        style={{ 
+          width: `${timelineWidth * zoomLevel}px`,
+          transition: isDragging ? 'none' : 'transform 0.2s ease',
+          transform: `translate(${scrollPosition.x}px, ${scrollPosition.y}px)`
+        }}
+      >
+        {/* Timeline Bar */}
+        <div className="h-1 bg-gray-300 w-full relative">
+          {getTimelineYears().map((year) => (
+            <div
+              key={year}
+              className="absolute transform -translate-x-1/2"
+              style={{
+                left: `${
+                  (year - getTimelineYears()[0]) *
+                  (100 / (getTimelineYears().length - 1))
+                }%`,
+              }}
+            >
+              <div className="h-3 w-1 bg-gray-300 -mt-1 mx-auto" />
+              <div className="mt-2 text-sm text-gray-600">{year}</div>
+            </div>
+          ))}
+        </div>
+
+        {/* Experience Sections - Above Timeline */}
+        <div className="absolute w-full" style={{ top: "-370px" }}>
+          {resume.experience.map((exp, index) => {
+            const startYear = new Date(exp.startDate).getFullYear();
+            const endYear = exp.endDate
+              ? new Date(exp.endDate).getFullYear()
+              : new Date().getFullYear();
+            const timelineStart = getTimelineYears()[0];
+            const timelineLength = getTimelineYears().length - 1;
+
+            return (
+              <div
+                key={exp.id}
+                className="absolute"
+                style={{
+                  left: `${
+                    (startYear - timelineStart) * (100 / timelineLength)
+                  }%`,
+                  width: `${(endYear - startYear) * (100 / timelineLength)}%`,
+                  top: `${160 - (index % 2) * 120}px`, // Stack items vertically
+                }}
+              >
+                <div className="bg-primary-100 p-3 rounded-lg border border-primary-200 mb-2 w-48">
+                  <div className="font-semibold truncate">{exp.position}</div>
+                  <div className="text-sm truncate">{exp.company}</div>
+                  <div className="text-xs text-gray-500">
+                    {new Date(exp.startDate).toLocaleDateString("en-US", {
+                      month: "short",
+                      year: "numeric",
+                    })}{" "}
+                    -
+                    {exp.endDate
+                      ? new Date(exp.endDate).toLocaleDateString("en-US", {
+                          month: "short",
+                          year: "numeric",
+                        })
+                      : "Present"}
+                  </div>
+                </div>
+                <div className="w-3 h-3 bg-primary-500 rounded-full -ml-1.5" />
+                <div
+                  className={`border-l border-dashed border-primary-300`}
+                  style={{ height: `${(index % 2) * 122 + 96}px` }}
+                />
+              </div>
+            );
+          })}
+        </div>
+
+        {/* Education Sections - Below Timeline */}
+        <div className="absolute w-full" style={{ top: "40px" }}>
+          {resume.education.map((edu) => {
+            const startYear = new Date(edu.startDate).getFullYear();
+            const endYear = edu.endDate
+              ? new Date(edu.endDate).getFullYear()
+              : new Date().getFullYear();
+            const timelineStart = getTimelineYears()[0];
+            const timelineLength = getTimelineYears().length - 1;
+
+            return (
+              <div
+                key={edu.id}
+                className="absolute"
+                style={{
+                  left: `${
+                    (startYear - timelineStart) * (100 / timelineLength)
+                  }%`,
+                  width: `${(endYear - startYear) * (100 / timelineLength)}%`,
+                }}
+              >
+                <div className="h-24 border-l border-dashed border-blue-300" />
+                <div className="w-3 h-3 bg-blue-500 rounded-full -ml-1.5" />
+                <div className="bg-blue-100 p-3 rounded-lg border border-blue-200 mt-2 w-48">
+                  <div className="font-semibold truncate">{edu.school}</div>
+                  <div className="text-sm truncate">{edu.degree}</div>
+                  <div className="text-xs text-gray-500">
+                    {new Date(edu.startDate).toLocaleDateString("en-US", {
+                      month: "short",
+                      year: "numeric",
+                    })}{" "}
+                    -
+                    {edu.endDate
+                      ? new Date(edu.endDate).toLocaleDateString("en-US", {
+                          month: "short",
+                          year: "numeric",
+                        })
+                      : "Present"}
+                  </div>
+                </div>
+              </div>
+            );
+          })}
+        </div>
+      </div>
+    </div>
   );
 
   return (
@@ -768,118 +970,7 @@ const ResumeBuilder = () => {
             )}
           </div>
         ) : (
-          // Visual View with Timeline Library
-          <div className="border border-gray-200 rounded-lg p-8 bg-white shadow-sm">
-            <div className="h-[600px]">
-              {" "}
-              {/* Fixed height container for timeline */}
-              {(() => {
-                // Convert resume data to timeline items
-                const items: TimelineItemModel[] = [
-                  ...resume.experience.map((exp) => {
-                    return {
-                      title: new Date(exp.startDate).getFullYear().toString(),
-                      cardTitle: exp.position,
-                      cardSubtitle: exp.company,
-                      cardDetailedText: exp.description
-                        ? [
-                            exp.description,
-                            `${new Date(exp.startDate).toLocaleDateString(
-                              "en-US",
-                              {
-                                month: "short",
-                                year: "numeric",
-                              }
-                            )} - ${
-                              exp.endDate
-                                ? new Date(exp.endDate).toLocaleDateString(
-                                    "en-US",
-                                    {
-                                      month: "short",
-                                      year: "numeric",
-                                    }
-                                  )
-                                : "Present"
-                            }`,
-                          ]
-                        : [], // Keep this too
-                    };
-                  }),
-
-                  ...resume.education.map((edu) => {
-                    return {
-                      title: new Date(edu.startDate).getFullYear().toString(),
-                      cardTitle: `${edu.degree} in ${edu.field}`,
-                      cardSubtitle: edu.school,
-                      cardDetailedText: edu.description
-                        ? [
-                            edu.description,
-                            `${new Date(edu.startDate).toLocaleDateString(
-                              "en-US",
-                              {
-                                month: "short",
-                                year: "numeric",
-                              }
-                            )} - ${
-                              edu.endDate
-                                ? new Date(edu.endDate).toLocaleDateString(
-                                    "en-US",
-                                    {
-                                      month: "short",
-                                      year: "numeric",
-                                    }
-                                  )
-                                : "Present"
-                            }`,
-                          ]
-                        : [], // Keep this too
-                    };
-                  }),
-                ].sort(
-                  (a, b) =>
-                    new Date(a.title).getTime() - new Date(b.title).getTime()
-                );
-
-                return (
-                  <Chrono
-                    items={items}
-                    mode="HORIZONTAL"
-                    cardHeight={250}
-                    slideShow
-                    enableOutline
-                    showAllCardsHorizontal
-                    cardWidth={300}
-                    hideControls
-                    allowDynamicUpdate // Add this to ensure updates are reflected
-                    scrollable // Ensure scrolling works
-                    theme={{
-                      primary: "#4F46E5",
-                      secondary: "#818CF8",
-                      cardBgColor: "white",
-                      cardForeColor: "black",
-                      titleColor: "black",
-                      titleColorActive: "#4F46E5",
-                    }}
-                    fontSizes={{
-                      cardSubtitle: "0.85rem",
-                      cardText: "0.8rem",
-                      cardTitle: "1rem",
-                      title: "0.85rem",
-                    }}
-                    classNames={{
-                      card: "timeline-card",
-                      cardMedia: "timeline-card-media",
-                      cardSubTitle: "timeline-card-subtitle",
-                      cardText: "timeline-card-text",
-                      cardTitle: "timeline-card-title",
-                      controls: "timeline-controls",
-                      title: "timeline-title",
-                    }}
-                  />
-                );
-              })()}
-            </div>
-          </div>
+          renderVisualView()
         )}
       </section>
     </div>
