@@ -1,5 +1,5 @@
 import { createSlice, PayloadAction } from '@reduxjs/toolkit';
-import { Resume } from '../../types';
+import { Resume, Language, IdentityTraits, Hobby } from '../../types';
 
 interface ResumeState {
   currentResume: Resume | null;
@@ -16,7 +16,56 @@ const sampleResume: Resume = {
     phone: '+1 (555) 123-4567',
     location: 'San Francisco, CA',
     summary: 'Innovative Tech Leader with 8+ years of experience in software development and team leadership. Proven track record of delivering high-impact projects at scale while mentoring engineering teams. Passionate about cloud architecture, distributed systems, and creating efficient, scalable solutions that drive business growth.',
+    photo: '',
+    gender: 'male',
+    birthday: '1990-01-01',
+    address: '123 Main St, San Francisco, CA 94101',
+    skype: 'alex.thompson',
+    portfolio: 'https://alex-thompson.com',
+    professionalAreas: [
+      {
+        id: 'tech1',
+        name: 'Software Development',
+        category: 'Technology',
+      },
+      {
+        id: 'tech2',
+        name: 'Cloud Computing',
+        category: 'Technology',
+      },
+
+      {
+        id: 'bus1',
+        name: 'Project Management',
+        category: 'Business',
+      },
+
+    ],
+    hobbies: [
+      {
+        id: '1',
+        name: 'Reading',
+        icon: '👀',
+      },
+      {
+        id: '2',
+        name: 'Traveling',
+        icon: '🌍',
+      },
+      {
+        id: '3',
+        name: 'Cooking',
+        icon: '🍳',
+      },
+      {
+        id: '4',
+        name: 'Yoga',
+        icon: '🧘‍♂️',
+      },
+    ],
   },
+
+
   education: [
     {
       id: 'edu1',
@@ -71,62 +120,97 @@ const sampleResume: Resume = {
       id: 'skill1',
       name: 'System Architecture',
       level: 'Expert',
+      category: 'job-specific'
     },
     {
       id: 'skill2',
       name: 'Cloud Computing (AWS, GCP)',
       level: 'Expert',
+      category: 'job-specific'
     },
     {
       id: 'skill3',
       name: 'Kubernetes',
       level: 'Advanced',
+      category: 'job-specific'
     },
     {
       id: 'skill4',
       name: 'Node.js/TypeScript',
       level: 'Expert',
+      category: 'job-specific'
     },
     {
       id: 'skill5',
       name: 'React/Next.js',
       level: 'Advanced',
+      category: 'job-specific'
     },
     {
       id: 'skill6',
       name: 'Python',
       level: 'Advanced',
+      category: 'job-specific'
     },
     {
       id: 'skill7',
       name: 'Team Leadership',
       level: 'Expert',
+      category: 'transferable'
     },
     {
       id: 'skill8',
       name: 'Agile Methodologies',
       level: 'Expert',
+      category: 'transferable'
     },
     {
       id: 'skill9',
       name: 'System Design',
       level: 'Advanced',
+      category: 'job-specific'
     },
     {
       id: 'skill10',
       name: 'CI/CD',
       level: 'Advanced',
+      category: 'job-specific'
     },
     {
       id: 'skill11',
       name: 'Microservices',
       level: 'Expert',
+      category: 'job-specific'
     },
     {
       id: 'skill12',
       name: 'Database Design',
       level: 'Advanced',
+      category: 'job-specific'
     }
+  ],
+  languages: [
+    {
+      id: 'lang1',
+      name: 'English',
+      proficiency: 'Native',
+    }
+  ],
+  identityTraits: {
+    outgoingReserved: 80,
+    directedFlexible: 20,
+    steadySensitive: 50,
+    carefreeEfficient: 90,
+    curiousConsistent: 10,
+  },
+  hobbies: [
+    'Reading',
+    'Traveling',
+    'Cooking',
+    'Yoga',
+    'Swimming',
+    'Hiking',
+    'Photography',
   ],
 };
 
@@ -169,6 +253,49 @@ const resumeSlice = createSlice({
     setError: (state, action: PayloadAction<string | null>) => {
       state.error = action.payload;
     },
+    addLanguage: (state, action: PayloadAction<Language>) => {
+      if (state.currentResume) {
+        state.currentResume.languages.push(action.payload);
+      }
+    },
+    updateIdentityTraits: (state, action: PayloadAction<IdentityTraits>) => {
+      if (state.currentResume) {
+        state.currentResume.identityTraits = action.payload;
+      }
+    },
+    addHobby: (state, action: PayloadAction<Hobby>) => {
+      if (state.currentResume) {
+        state.currentResume.personalInfo.hobbies.push(action.payload);
+      }
+    },
+    deleteLanguage: (state, action: PayloadAction<string>) => {
+      if (state.currentResume) {
+        state.currentResume.languages = state.currentResume.languages.filter(
+          lang => lang.id !== action.payload
+        );
+      }
+    },
+    deleteEducation: (state, action: PayloadAction<string>) => {
+      if (state.currentResume) {
+        state.currentResume.education = state.currentResume.education.filter(
+          edu => edu.id !== action.payload
+        );
+      }
+    },
+    deleteExperience: (state, action: PayloadAction<string>) => {
+      if (state.currentResume) {
+        state.currentResume.experience = state.currentResume.experience.filter(
+          exp => exp.id !== action.payload
+        );
+      }
+    },
+    deleteSkill: (state, action: PayloadAction<string>) => {
+      if (state.currentResume) {
+        state.currentResume.skills = state.currentResume.skills.filter(
+          skill => skill.id !== action.payload
+        );
+      }
+    },
   },
 });
 
@@ -180,6 +307,13 @@ export const {
   addSkill,
   setLoading,
   setError,
+  addLanguage,
+  updateIdentityTraits,
+  addHobby,
+  deleteLanguage,
+  deleteEducation,
+  deleteExperience,
+  deleteSkill,
 } = resumeSlice.actions;
 
 export default resumeSlice.reducer;
