@@ -43,22 +43,22 @@ const sampleResume: Resume = {
     ],
     hobbies: [
       {
-        id: '1',
+        id: 'hobby1',
         name: 'Reading',
         icon: '👀',
       },
       {
-        id: '2',
+        id: 'hobby2',
         name: 'Traveling',
         icon: '🌍',
       },
       {
-        id: '3',
+        id: 'hobby3',
         name: 'Cooking',
         icon: '🍳',
       },
       {
-        id: '4',
+        id: 'hobby4',
         name: 'Yoga',
         icon: '🧘‍♂️',
       },
@@ -204,13 +204,17 @@ const sampleResume: Resume = {
     curiousConsistent: 10,
   },
   hobbies: [
-    'Reading',
-    'Traveling',
-    'Cooking',
-    'Yoga',
-    'Swimming',
-    'Hiking',
-    'Photography',
+    {
+      id: 'hobby1',
+      name: 'Reading',
+      icon: '📚',
+    },
+    {
+      id: 'hobby2',
+      name: 'Traveling',
+      icon: '✈️',
+    },
+         
   ],
 };
 

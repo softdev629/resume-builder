@@ -1359,7 +1359,7 @@ const ResumeBuilder = () => {
                   Job Related Skills
                 </h4>
                 <div className="space-y-2">
-                  {["Expert", "Advanced", "Intermediate", "Basic"].map(
+                  {["Expert", "Advanced", "Intermediate", "Beginner"].map(
                     (level) => {
                       const levelSkills = resume.skills.filter(
                         (skill) =>
@@ -1700,7 +1700,7 @@ const ResumeBuilder = () => {
           </div>
         </div>
         <div className="md:col-span-2">
-          <h3 className="text-lg font-medium mb-3">Hobbies</h3>
+          <h3 className="text-lg font-medium mb-3">Hobbies (Select up to 4)</h3>
           <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3">
             {AVAILABLE_HOBBIES.map((hobby) => {
               const isSelected = resume.personalInfo.hobbies.some(
@@ -1719,7 +1719,7 @@ const ResumeBuilder = () => {
                           ),
                         })
                       );
-                    } else {
+                    } else if (resume.personalInfo.hobbies.length < 4) {
                       dispatch(
                         updatePersonalInfo({
                           ...resume.personalInfo,
@@ -1728,9 +1728,12 @@ const ResumeBuilder = () => {
                       );
                     }
                   }}
+                  disabled={!isSelected && resume.personalInfo.hobbies.length >= 4}
                   className={`flex items-center gap-2 p-3 rounded-lg transition-colors ${
                     isSelected
                       ? "bg-primary-100 text-primary-800 border-2 border-primary-500"
+                      : resume.personalInfo.hobbies.length >= 4 && !isSelected
+                      ? "bg-gray-100 text-gray-400 cursor-not-allowed"
                       : "bg-gray-100 text-gray-800 hover:bg-gray-200"
                   }`}
                 >
@@ -1804,7 +1807,10 @@ const ResumeBuilder = () => {
         <h1 className="text-3xl font-bold">Build Your Resume</h1>
         <div className="space-x-4">
           <button
-            onClick={() => setIsPreviewOpen(true)}
+            onClick={() => {
+              setIsPreviewOpen(true);
+              setPreviewView("text");
+            }}
             className="btn bg-gray-200 hover:bg-gray-300"
           >
             Preview

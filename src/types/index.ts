@@ -41,7 +41,7 @@ export interface Resume {
   skills: Skill[];
   languages: Language[];
   identityTraits: IdentityTraits;
-  hobbies: string[];
+  hobbies: Hobby[];
 }
 
 
