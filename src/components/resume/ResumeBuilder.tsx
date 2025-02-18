@@ -290,21 +290,28 @@ const ResumeBuilder = () => {
       ]);
 
       momentSeries1.direction("up");
+      momentSeries1.markers().type("circle");
+      momentSeries1.normal().markers().size(5);
+      momentSeries1.hovered().markers().size(5);
+      momentSeries1.selected().markers().size(5);
+      momentSeries1.normal().markers().fill("#dd2c00");
+      momentSeries1.hovered().markers().fill("#dd2c00");
+      momentSeries1.selected().markers().fill("#004e72");
+      momentSeries1.normal().markers().stroke("#dd2c00", 1);
+      momentSeries1.hovered().markers().stroke("#dd2c00", 2);
+      momentSeries1.selected().markers().stroke("#004e72", 2);
 
       const rangeSeries2 = chart.range([
         ...resume!.education.map((item, index) => ({
           start: item.startDate,
           end: item.endDate || new Date().toISOString(),
           fill: [
-            // Professional theme
-            // Vibrant theme
             "#E74C3C",
             "#9B59B6",
             "#F1C40F",
             "#E67E22",
             "#8E44AD",
             "#D35400",
-            // Pastel theme
           ][index % 6],
           stroke: "#00000000",
         })),
@@ -318,14 +325,53 @@ const ResumeBuilder = () => {
           '<span style="font-size: 85%">{%start}{dateTimeFormat:MM/yyyy} - {%end}{dateTimeFormat:MM/yyyy}</span>'
         );
 
+      // Reduce range series height
+      rangeSeries2.height(30);
+      rangeSeries2.direction("down");
+
       const momentSeries2 = chart.moment([
         ...resume!.education.map((item) => [item.startDate, item.school]),
       ]);
 
+      // Increase moment series height/spacing
       momentSeries2.direction("down");
+      momentSeries2.markers().type("diamond");
+      momentSeries2.normal().markers().size(6);
+      momentSeries2.hovered().markers().size(8);
+      momentSeries2.selected().markers().size(8);
+      // Cool metallic gradient for education markers
+      momentSeries2.normal().markers().fill({
+        keys: ["#845EC2", "#D65DB1"],
+        angle: -45,
+      });
+      momentSeries2.hovered().markers().fill({
+        keys: ["#9B74CB", "#E17DBD"],
+        angle: -45,
+      });
+      momentSeries2.selected().markers().fill({
+        keys: ["#6C44B5", "#C53A9D"],
+        angle: -45,
+      });
+      // Stylish strokes
+      momentSeries2.normal().markers().stroke("#2C1810", 2);
+      momentSeries2.hovered().markers().stroke("#3D2920", 3);
+      momentSeries2.selected().markers().stroke("#1B0A05", 3);
 
-      rangeSeries2.height(50);
-      rangeSeries2.direction("down");
+      // Enhanced label styling for both series
+      momentSeries1.labels().fontColor("#2B3A67");
+      momentSeries2.labels().fontColor("#2C1810");
+      momentSeries1.labels().background().stroke("#FF6B6B", 2);
+      momentSeries2.labels().background().stroke("#845EC2", 2);
+      momentSeries1.labels().background().fill({
+        keys: ["#FF6B6B", "#4ECDC4"],
+        opacity: 0.15,
+        angle: 45,
+      });
+      momentSeries2.labels().background().fill({
+        keys: ["#845EC2", "#D65DB1"],
+        opacity: 0.15,
+        angle: -45,
+      });
 
       // Set container id for the chart
       chart.container("timeline-container");
@@ -1728,7 +1774,9 @@ const ResumeBuilder = () => {
                       );
                     }
                   }}
-                  disabled={!isSelected && resume.personalInfo.hobbies.length >= 4}
+                  disabled={
+                    !isSelected && resume.personalInfo.hobbies.length >= 4
+                  }
                   className={`flex items-center gap-2 p-3 rounded-lg transition-colors ${
                     isSelected
                       ? "bg-primary-100 text-primary-800 border-2 border-primary-500"
